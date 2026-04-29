@@ -1,83 +1,93 @@
-const mongoose = require('mongoose');
+const Database = require('better-sqlite3');
 const bcrypt = require('bcrypt');
+const crypto = require('crypto');
+const path = require('path');
 
-// connect to mongodb
-mongoose.connect('mongodb+srv://Julia123:Julia123@cluster0.mq3mh.mongodb.net/users', {})
-    .then(() => console.log('MongoDB connected to users database'))
-    .catch(err => console.error('MongoDB connection error:', err));
+const db = new Database(path.join(__dirname, 'docvault.db'));
+db.pragma('journal_mode = WAL');
+db.pragma('foreign_keys = ON');
 
-//user model
-const userSchema = new mongoose.Schema({
-    name: {
-        type: String,
-        required: true
+db.exec(`
+    CREATE TABLE IF NOT EXISTS users (
+        _id     TEXT PRIMARY KEY,
+        name    TEXT NOT NULL,
+        email   TEXT UNIQUE NOT NULL,
+        password TEXT NOT NULL,
+        createdAt TEXT DEFAULT (datetime('now')),
+        updatedAt TEXT DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS documents (
+        _id              TEXT PRIMARY KEY,
+        name             TEXT NOT NULL,
+        type             TEXT NOT NULL,
+        expirationDate   TEXT,
+        issuingAuthority TEXT,
+        fileName         TEXT NOT NULL,
+        fileType         TEXT NOT NULL,
+        filePath         TEXT NOT NULL,
+        user             TEXT NOT NULL,
+        createdAt        TEXT DEFAULT (datetime('now')),
+        updatedAt        TEXT DEFAULT (datetime('now')),
+        FOREIGN KEY (user) REFERENCES users(_id)
+    );
+`);
+
+const User = {
+    async findOne({ email }) {
+        return db.prepare('SELECT * FROM users WHERE email = ?').get(email) || null;
     },
-    email: {
-        type: String,
-        required: true,
-        unique: true
+
+    async findById(id) {
+        return db.prepare('SELECT _id, name, email, createdAt, updatedAt FROM users WHERE _id = ?').get(id) || null;
     },
-    password: {
-        type: String,
-        required: true
-    }
-}, { timestamps: true });
 
-//hash passowrd before saving
-userSchema.pre('save', async function (next) {
-    if (!this.isModified('password')) return next();
-
-    try {
+    async create({ name, email, password }) {
         const salt = await bcrypt.genSalt(10);
-        this.password = await bcrypt.hash(this.password, salt);
-        next();
-    } catch (error) {
-        next(error);
+        const hashed = await bcrypt.hash(password, salt);
+        const _id = crypto.randomUUID();
+        db.prepare('INSERT INTO users (_id, name, email, password) VALUES (?, ?, ?, ?)').run(_id, name, email, hashed);
+        return { _id, name, email };
     }
-});
-
-
-const documentSchema = new mongoose.Schema({
-    name: {
-        type: String,
-        required: true
-    },
-    type: {
-        type: String,
-        required: true,
-        enum: ['passport', 'visa', 'id', 'insurance', 'certificate', 'other']
-    },
-    expirationDate: {
-        type: Date,
-        default: null
-    },
-    issuingAuthority: {
-        type: String
-    },
-    fileName: {
-        type: String,
-        required: true
-    },
-    fileType: {
-        type: String,
-        enum: ['pdf', 'image', 'other'],
-        required: true
-    },
-    filePath: {
-        type: String,
-        required: true
-    },
-    user: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        required: true
-    }
-}, { timestamps: true });
-
-const User = mongoose.model('User', userSchema);
-const Document = mongoose.model('Document', documentSchema);
-
-module.exports = {
-    User,
-    Document
 };
+
+const Document = {
+    async find({ user }) {
+        return db.prepare('SELECT * FROM documents WHERE user = ? ORDER BY createdAt DESC').all(user);
+    },
+
+    async findOne({ _id, user }) {
+        if (user !== undefined) {
+            return db.prepare('SELECT * FROM documents WHERE _id = ? AND user = ?').get(_id, user) || null;
+        }
+        return db.prepare('SELECT * FROM documents WHERE _id = ?').get(_id) || null;
+    },
+
+    async create({ name, type, expirationDate, issuingAuthority, fileName, fileType, filePath, user }) {
+        const _id = crypto.randomUUID();
+        const now = new Date().toISOString();
+        db.prepare(`
+            INSERT INTO documents (_id, name, type, expirationDate, issuingAuthority, fileName, fileType, filePath, user, createdAt, updatedAt)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `).run(_id, name, type, expirationDate || null, issuingAuthority || null, fileName, fileType, filePath, user, now, now);
+        return Document.findOne({ _id });
+    },
+
+    async update(_id, userId, fields) {
+        const now = new Date().toISOString();
+        const allowed = ['name', 'type', 'expirationDate', 'issuingAuthority', 'fileName', 'fileType', 'filePath'];
+        const cols = Object.keys(fields).filter(k => allowed.includes(k));
+        const setClauses = [...cols.map(k => `${k} = ?`), 'updatedAt = ?'].join(', ');
+        const values = [...cols.map(k => fields[k] ?? null), now];
+        db.prepare(`UPDATE documents SET ${setClauses} WHERE _id = ? AND user = ?`).run(...values, _id, userId);
+        return Document.findOne({ _id });
+    },
+
+    async deleteOne({ _id }) {
+        db.prepare('DELETE FROM documents WHERE _id = ?').run(_id);
+    }
+};
+
+console.log('SQLite database ready');
+
+module.exports = { User, Document };

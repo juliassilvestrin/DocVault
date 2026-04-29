@@ -1,0 +1,15 @@
+node_modules/
+.env
+.env.local
+.DS_Store
+*.log
+
+# Database files
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+
+# Uploaded files
+uploads/
+server/uploads/

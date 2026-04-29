@@ -339,7 +339,7 @@ const app = Vue.createApp({
             }
 
             if (this.uploadForm.issuingAuthority) {
-                formData.append('issuingauthority', this.uploadForm.issuingAuthority);
+                formData.append('issuingAuthority', this.uploadForm.issuingAuthority);
             }
 
             formData.append('file', this.uploadForm.file);

@@ -130,8 +130,7 @@ app.post('/api/users/register', async (req, res) => {
             return res.status(400).json({ message: 'User already exists' });
         }
 
-        const newUser = new User({ name, email, password });
-        await newUser.save();
+        await User.create({ name, email, password });
 
         console.log('User registered successfully');
         res.status(201).json({ message: 'User registered successfully' });
@@ -200,7 +199,7 @@ app.get('/api/users/me', isAuthenticated, async (req, res) => {
         const userId = req.session.userId;
         console.log('Getting user info for ID:', userId);
 
-        const user = await User.findById(userId).select('-password');
+        const user = await User.findById(userId);
         if (!user) {
             console.log('User not found for ID:', userId);
             return res.status(404).json({ message: 'User not found' });
@@ -220,7 +219,7 @@ app.get('/api/documents', isAuthenticated, async (req, res) => {
         const userId = req.session.userId;
         console.log('Getting documents for user ID:', userId);
 
-        const documents = await Document.find({ user: userId }).sort({ createdAt: -1 });
+        const documents = await Document.find({ user: userId });
         console.log(`Found ${documents.length} documents for user ID:`, userId);
 
         res.json(documents);
@@ -286,7 +285,7 @@ app.post('/api/documents', isAuthenticated, upload.single('file'), handleMulterE
             fileType = 'image';
         }
 
-        const document = new Document({
+        const document = await Document.create({
             name: req.body.name,
             type: req.body.type,
             expirationDate: req.body.expirationDate || null,
@@ -296,8 +295,6 @@ app.post('/api/documents', isAuthenticated, upload.single('file'), handleMulterE
             filePath: req.file.path,
             user: userId
         });
-
-        await document.save();
         console.log(`Document created successfully with ID: ${document._id} for user ID:`, userId);
 
         res.status(201).json(document);
@@ -338,35 +335,30 @@ app.put('/api/documents/:id', isAuthenticated, upload.single('file'), handleMult
         }
 
 
-        document.name = req.body.name;
-        document.type = req.body.type;
-        document.expirationDate = req.body.expirationDate || document.expirationDate;
-        document.issuingAuthority = req.body.issuingAuthority || document.issuingAuthority;
-
+        const updateFields = {
+            name: req.body.name,
+            type: req.body.type,
+            expirationDate: req.body.expirationDate || document.expirationDate,
+            issuingAuthority: req.body.issuingAuthority || document.issuingAuthority,
+        };
 
         if (req.file) {
-            //remove old file
             if (fs.existsSync(document.filePath)) {
                 fs.unlinkSync(document.filePath);
             }
-
-
             let fileType = 'other';
-            if (req.file.mimetype === 'application/pdf') {
-                fileType = 'pdf';
-            } else if (req.file.mimetype.startsWith('image/')) {
-                fileType = 'image';
-            }
+            if (req.file.mimetype === 'application/pdf') fileType = 'pdf';
+            else if (req.file.mimetype.startsWith('image/')) fileType = 'image';
 
-            document.fileName = req.file.originalname;
-            document.fileType = fileType;
-            document.filePath = req.file.path;
+            updateFields.fileName = req.file.originalname;
+            updateFields.fileType = fileType;
+            updateFields.filePath = req.file.path;
         }
 
-        await document.save();
+        const updatedDocument = await Document.update(documentId, userId, updateFields);
         console.log(`Document ${documentId} updated successfully for user ID:`, userId);
 
-        res.json(document);
+        res.json(updatedDocument);
     } catch (error) {
         console.error('Update document error:', error);
         res.status(500).json({ message: 'Server error', error: error.message });

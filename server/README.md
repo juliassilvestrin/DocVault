@@ -1,139 +1,95 @@
-# Universal Document Assistant
+# DocVault
 
-A secure document management system for storing, organizing, and tracking important documents like passports, visas, identification cards, and certificates.
+A secure document management web app for storing, organizing, and tracking important documents — passports, visas, IDs, insurance cards, and certificates.
 
 ## Deployed Application
 
-- **Client**: [https://document-assistant.example.com](https://document-assistant.example.com)
-- **Server**: [https://document-assistant-api.example.com](https://document-assistant-api.example.com)
-
-## Project Description
-
-Universal Document Assistant provides a centralized solution for managing important documents and keeping track of their expiration dates. It offers document storage with user authentication, expiration tracking, and an intuitive interface for managing various document types.
+- [https://webapp2-4pmh.onrender.com](https://webapp2-4pmh.onrender.com)
 
 ## Features
 
 - User registration and authentication
-- Document upload, storage, and management
-- Document expiration tracking and status indicators
-- Search and filter capabilities for documents
-- Responsive design for desktop and mobile devices
+- Document upload (PDF, JPG, PNG — max 5 MB)
+- Expiration date tracking with status indicators (valid / expiring soon / expired)
+- Search and filter documents by name or type
+- Responsive design for desktop and mobile
 
 ## Technology Stack
 
-- **Frontend**:
-  - Vue.js 3 
-  - HTML/CSS
-  - Fetch API for AJAX requests
+**Frontend**
 
-- **Backend**:
-  - Node.js with Express
-  - MongoDB 
-  - Authentication with express-session
-  - bcrypt for password hashing
-  - Multer for file uploads
+- Vue.js 3 (CDN, no build step)
+- Vanilla HTML/CSS
+- Fetch API
 
-## Data Models/Schema
+**Backend**
 
-### User Model
+- Node.js + Express
+- SQLite via `better-sqlite3`
+- `express-session` for authentication
+- `bcrypt` for password hashing
+- `multer` for file uploads
 
-```javascript
-const userSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: true,
-    trim: true
-  },
-  email: {
-    type: String,
-    required: true,
-    unique: true,
-    trim: true,
-    lowercase: true
-  },
-  password: {
-    type: String,
-    required: true,
-    minLength: 8
-  }
-}, {
-  timestamps: true
-});
+## Data Models
 
-//password hashing middleware
-userSchema.pre('save', async function(next) {
-  if (this.isModified('password')) {
-    this.password = await bcrypt.hash(this.password, 10);
-  }
-  next();
-});
-```
+### Users
 
-### Document Model
+| Column      | Type | Notes            |
+| ----------- | ---- | ---------------- |
+| `_id`       | TEXT | UUID primary key |
+| `name`      | TEXT | Required         |
+| `email`     | TEXT | Unique, required |
+| `password`  | TEXT | bcrypt hashed    |
+| `createdAt` | TEXT | ISO timestamp    |
+| `updatedAt` | TEXT | ISO timestamp    |
 
-```javascript
-const documentSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: true,
-    trim: true
-  },
-  type: {
-    type: String,
-    required: true,
-    enum: ['passport', 'visa', 'id', 'insurance', 'certificate', 'other']
-  },
-  expirationDate: {
-    type: Date,
-    default: null
-  },
-  issuingAuthority: {
-    type: String,
-    trim: true
-  },
-  fileName: {
-    type: String,
-    required: true
-  },
-  fileType: {
-    type: String,
-    enum: ['pdf', 'image', 'other'],
-    required: true
-  },
-  filePath: {
-    type: String,
-    required: true
-  },
-  user: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
-  }
-}, {
-  timestamps: true
-});
-```
+### Documents
+
+| Column             | Type | Notes                                             |
+| ------------------ | ---- | ------------------------------------------------- |
+| `_id`              | TEXT | UUID primary key                                  |
+| `name`             | TEXT | Required                                          |
+| `type`             | TEXT | passport, visa, id, insurance, certificate, other |
+| `expirationDate`   | TEXT | Optional                                          |
+| `issuingAuthority` | TEXT | Optional                                          |
+| `fileName`         | TEXT | Original filename                                 |
+| `fileType`         | TEXT | pdf, image, other                                 |
+| `filePath`         | TEXT | Path on server filesystem                         |
+| `user`             | TEXT | Foreign key → users.\_id                          |
+| `createdAt`        | TEXT | ISO timestamp                                     |
+| `updatedAt`        | TEXT | ISO timestamp                                     |
 
 ## REST API Endpoints
 
 ### Authentication
 
-| Method | Endpoint | Description | Request Body | Response |
-|--------|----------|-------------|--------------|----------|
-| POST | `/api/users/register` | Register a new user | `{name, email, password}` | `{message: "User registered successfully"}` |
-| POST | `/api/users/login` | Log in a user | `{email, password}` | `{message: "Login successful", user: {id, name, email}}` |
-| POST | `/api/users/logout` | Log out a user | None | `{message: "Logged out successfully"}` |
-| GET | `/api/users/me` | Get current user info | None | User object without password |
+| Method | Endpoint              | Description         | Request Body              | Response                             |
+| ------ | --------------------- | ------------------- | ------------------------- | ------------------------------------ |
+| POST   | `/api/users/register` | Register a new user | `{name, email, password}` | `{message}`                          |
+| POST   | `/api/users/login`    | Log in              | `{email, password}`       | `{message, user: {id, name, email}}` |
+| POST   | `/api/users/logout`   | Log out             | —                         | `{message}`                          |
+| GET    | `/api/users/me`       | Get current user    | —                         | User object (no password)            |
 
 ### Documents
 
-| Method | Endpoint | Description | Request Body/Parameters | Response |
-|--------|----------|-------------|------------------------|----------|
-| GET | `/api/documents` | Get all user documents | None | Array of document objects |
-| GET | `/api/documents/:id` | Get a specific document | `id` (path parameter) | Document object |
-| POST | `/api/documents` | Create a new document | Form data with `name`, `type`, `expirationDate` (optional), `issuingAuthority` (optional), and `file` | Created document object |
-| PUT | `/api/documents/:id` | Update a document | `id` (path parameter), Form data with fields to update | Updated document object |
-| DELETE | `/api/documents/:id` | Delete a document | `id` (path parameter) | `{message: "Document deleted successfully"}` |
+| Method | Endpoint                  | Description       | Body/Params                                                                           | Response           |
+| ------ | ------------------------- | ----------------- | ------------------------------------------------------------------------------------- | ------------------ |
+| GET    | `/api/documents`          | Get all documents | —                                                                                     | Array of documents |
+| GET    | `/api/documents/:id`      | Get one document  | `id` in path                                                                          | Document object    |
+| POST   | `/api/documents`          | Upload a document | Multipart form: `name`, `type`, `file`, optional `expirationDate`, `issuingAuthority` | Created document   |
+| PUT    | `/api/documents/:id`      | Update a document | Same as POST, `file` optional                                                         | Updated document   |
+| DELETE | `/api/documents/:id`      | Delete a document | `id` in path                                                                          | `{message}`        |
+| GET    | `/api/documents/:id/file` | Download file     | `id` in path                                                                          | File stream        |
 
+## Local Development
 
+```bash
+npm install
+npm run dev
+```
 
+Open [http://localhost:3000](http://localhost:3000).
+
+## Deployment
+
+Deployed on Render. The SQLite database and uploaded files are stored on the server filesystem — they reset on redeploy.

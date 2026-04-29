@@ -1,412 +1,456 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Universal Document Assistant</title>
+    <title>DocVault</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20,400,1,0&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
-    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
 </head>
-
 <body>
-    <div id="app">
-        <!-- nav -->
-        <nav class="navbar">
-            <div class="container">
-                <a class="navbar-brand" href="#">Document Assistant</a>
-                <button class="navbar-toggler" @click="toggleNavigation">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="navbar-menu" :class="{ 'navbar-menu-active': navActive }">
-                    <ul class="navbar-nav">
-                        <li v-if="!isAuthenticated" class="nav-item">
-                            <a class="nav-link" :class="{ 'active': currentView === 'login' }" href="#"
-                                @click.prevent="showLogin">
-                                Login
-                            </a>
-                        </li>
-                        <li v-if="!isAuthenticated" class="nav-item">
-                            <a class="nav-link" :class="{ 'active': currentView === 'register' }" href="#"
-                                @click.prevent="showRegister">
-                                Register
-                            </a>
-                        </li>
-                        <li v-if="isAuthenticated" class="nav-item">
-                            <a class="nav-link" :class="{ 'active': currentView === 'dashboard' }" href="#"
-                                @click.prevent="showDashboard">
-                                Dashboard
-                            </a>
-                        </li>
-                        <li v-if="isAuthenticated" class="nav-item">
-                            <a class="nav-link" :class="{ 'active': currentView === 'documents' }" href="#"
-                                @click.prevent="showDocuments">
-                                Documents
-                            </a>
-                        </li>
-                        <li v-if="isAuthenticated" class="nav-item">
-                            <a class="nav-link" :class="{ 'active': currentView === 'upload' }" href="#"
-                                @click.prevent="showUpload">
-                                Upload
-                            </a>
-                        </li>
-                        <li v-if="isAuthenticated" class="nav-item">
-                            <a class="nav-link logout-link" href="#" @click.prevent="logout">
-                                Logout
-                            </a>
-                        </li>
-                    </ul>
+<div id="app">
+
+    <!-- ══ AUTH ══════════════════════════════════════════════ -->
+    <div v-if="!isAuthenticated" class="auth-page">
+        <div class="auth-blob blob-1"></div>
+        <div class="auth-blob blob-2"></div>
+        <div class="auth-blob blob-3"></div>
+
+        <div class="auth-card">
+            <div class="auth-card-top">
+                <div class="auth-logo-mark">
+                    <span class="material-symbols-rounded">shield</span>
                 </div>
+                <span class="auth-wordmark">DocVault</span>
             </div>
-        </nav>
 
-        <!-- notif alert-->
-        <div v-if="notification" class="container mt-3">
-            <div class="alert" :class="notification.type">
+            <div v-if="notification" class="alert" :class="notification.type" style="margin-bottom:16px">
                 {{ notification.message }}
-                <button type="button" class="close-btn" @click="clearNotification">&times;</button>
+                <button class="close-btn" @click="clearNotification"><span class="material-symbols-rounded">close</span></button>
             </div>
-        </div>
 
-        <!-- main stuff -->
-        <div class="container mt-4">
-            <!-- loginform -->
-            <div v-if="currentView === 'login'" class="auth-form">
-                <h2>Login</h2>
+            <!-- Login -->
+            <div v-if="currentView === 'login'">
+                <div class="auth-heading">
+                    <h2>Welcome back</h2>
+                    <p>Sign in to your account to continue</p>
+                </div>
                 <div v-if="loginError" class="alert alert-danger">{{ loginError }}</div>
                 <form @submit.prevent="login">
                     <div class="form-group">
-                        <label for="loginEmail">Email</label>
-                        <input type="email" class="form-control" id="loginEmail" v-model="loginForm.email" required>
+                        <label for="loginEmail">Email address</label>
+                        <input type="email" class="form-control" id="loginEmail" v-model="loginForm.email" placeholder="you@example.com" required>
                     </div>
                     <div class="form-group">
                         <label for="loginPassword">Password</label>
-                        <input type="password" class="form-control" id="loginPassword" v-model="loginForm.password"
-                            required>
+                        <input type="password" class="form-control" id="loginPassword" v-model="loginForm.password" placeholder="••••••••" required>
                     </div>
-                    <button type="submit" class="btn btn-primary" :disabled="loginLoading">
-                        {{ loginLoading ? 'Logging in...' : 'Login' }}
+                    <button type="submit" class="btn btn-primary btn-block" :disabled="loginLoading">
+                        {{ loginLoading ? 'Signing in…' : 'Sign in' }}
                     </button>
                 </form>
-                <p class="mt-3">
-                    Don't have an account?
-                    <a href="#" @click.prevent="showRegister">Register here</a>
-                </p>
+                <p class="auth-switch">Don't have an account? <a href="#" @click.prevent="showRegister">Create one</a></p>
             </div>
 
-            <!-- reg form -->
-            <div v-if="currentView === 'register'" class="auth-form">
-                <h2>Register</h2>
+            <!-- Register -->
+            <div v-if="currentView === 'register'">
+                <div class="auth-heading">
+                    <h2>Create account</h2>
+                    <p>Start managing your documents today</p>
+                </div>
                 <div v-if="registerError" class="alert alert-danger">{{ registerError }}</div>
                 <form @submit.prevent="register">
                     <div class="form-group">
-                        <label for="registerName">Full Name</label>
-                        <input type="text" class="form-control" id="registerName" v-model="registerForm.name" required>
+                        <label for="registerName">Full name</label>
+                        <input type="text" class="form-control" id="registerName" v-model="registerForm.name" placeholder="Jane Smith" required>
                     </div>
                     <div class="form-group">
-                        <label for="registerEmail">Email</label>
-                        <input type="email" class="form-control" id="registerEmail" v-model="registerForm.email"
-                            required>
+                        <label for="registerEmail">Email address</label>
+                        <input type="email" class="form-control" id="registerEmail" v-model="registerForm.email" placeholder="you@example.com" required>
                     </div>
                     <div class="form-group">
                         <label for="registerPassword">Password</label>
-                        <input type="password" class="form-control" id="registerPassword"
-                            v-model="registerForm.password" required minlength="8">
-                        <small class="form-text text-muted">Password must be at least 8 characters</small>
+                        <input type="password" class="form-control" id="registerPassword" v-model="registerForm.password" placeholder="Min. 8 characters" required minlength="8">
                     </div>
-                    <button type="submit" class="btn btn-primary" :disabled="registerLoading">
-                        {{ registerLoading ? 'Creating account...' : 'Register' }}
+                    <button type="submit" class="btn btn-primary btn-block" :disabled="registerLoading">
+                        {{ registerLoading ? 'Creating account…' : 'Create account' }}
                     </button>
                 </form>
-                <p class="mt-3">
-                    Already have an account?
-                    <a href="#" @click.prevent="showLogin">Login here</a>
-                </p>
+                <p class="auth-switch">Already have an account? <a href="#" @click.prevent="showLogin">Sign in</a></p>
             </div>
-
-            <!-- dashboard -->
-            <div v-if="currentView === 'dashboard' && isAuthenticated" class="dashboard">
-                <h2>Dashboard</h2>
-                <div class="stat-container">
-                    <div class="stat-card">
-                        <div class="stat-icon doc-icon"></div>
-                        <div class="stat-value">{{ documentStats.total }}</div>
-                        <div class="stat-label">Total Documents</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon valid-icon"></div>
-                        <div class="stat-value">{{ documentStats.valid }}</div>
-                        <div class="stat-label">Valid</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon expiring-icon"></div>
-                        <div class="stat-value">{{ documentStats.expiring }}</div>
-                        <div class="stat-label">Expiring Soon</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon expired-icon"></div>
-                        <div class="stat-value">{{ documentStats.expired }}</div>
-                        <div class="stat-label">Expired</div>
-                    </div>
-                </div>
-
-                <h3 class="mt-4">Recent Documents</h3>
-                <div v-if="loadingDocuments" class="spinner-container">
-                    <div class="spinner"></div>
-                </div>
-                <div v-else-if="documents.length === 0" class="empty-state">
-                    <div class="empty-state-icon"></div>
-                    <p>You don't have any documents yet.</p>
-                    <button class="btn btn-primary" @click="showUpload">Upload Your First Document</button>
-                </div>
-                <div v-else>
-                    <table class="doc-table">
-                        <thead>
-                            <tr>
-                                <th>Name</th>
-                                <th>Type</th>
-                                <th>Expiration Date</th>
-                                <th>Status</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr v-for="doc in recentDocuments" :key="doc._id">
-                                <td>{{ doc.name }}</td>
-                                <td>
-                                    <span class="doc-type-pill">{{ doc.type }}</span>
-                                </td>
-                                <td>{{ formatDate(doc.expirationDate) || 'N/A' }}</td>
-                                <td>
-                                    <span class="status-badge" :class="getStatusClass(doc)">
-                                        {{ getStatusText(doc) }}
-                                    </span>
-                                </td>
-                                <td>
-                                    <button class="btn btn-info" @click="viewDocument(doc._id)">View</button>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                    <div class="text-center mt-3">
-                        <button class="btn btn-secondary" @click="showDocuments">View All Documents</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- list documents -->
-            <div v-if="currentView === 'documents' && isAuthenticated" class="documents-list">
-                <div class="documents-header">
-                    <h2>My Documents</h2>
-                    <button class="btn btn-primary" @click="showUpload">Upload New Document</button>
-                </div>
-
-                <div class="filter-row">
-                    <input type="text" class="form-control" placeholder="Search documents..." v-model="searchQuery">
-                    <select class="form-control" v-model="typeFilter">
-                        <option value="">All Types</option>
-                        <option value="passport">Passport</option>
-                        <option value="visa">Visa</option>
-                        <option value="id">ID Card</option>
-                        <option value="insurance">Insurance</option>
-                        <option value="certificate">Certificate</option>
-                        <option value="other">Other</option>
-                    </select>
-                </div>
-
-                <div v-if="loadingDocuments" class="spinner-container">
-                    <div class="spinner"></div>
-                </div>
-                <div v-else-if="filteredDocuments.length === 0" class="empty-state">
-                    <p v-if="searchQuery || typeFilter">No documents match your filter criteria.</p>
-                    <p v-else>You don't have any documents yet.</p>
-                    <button class="btn btn-primary" @click="showUpload">Upload Document</button>
-                </div>
-                <div v-else class="card-list">
-                    <div v-for="doc in filteredDocuments" :key="doc._id" class="doc-card">
-                        <div class="doc-status" :class="getStatusClass(doc)">{{ getStatusText(doc) }}</div>
-
-                        <div class="doc-details">
-                            <h4>{{ doc.name }}</h4>
-                            <div class="doc-type-pill">{{ doc.type }}</div>
-                            <p v-if="doc.expirationDate">Expires: {{ formatDate(doc.expirationDate) }}</p>
-                            <p v-else>No expiration date</p>
-                        </div>
-
-                        <div class="doc-actions">
-                            <button class="btn btn-info" @click="viewDocument(doc._id)">View</button>
-                            <button class="btn btn-secondary" @click="editDocument(doc._id)">Edit</button>
-                            <button class="btn btn-danger" @click="confirmDelete(doc)">Delete</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- upload form -->
-            <div v-if="currentView === 'upload' && isAuthenticated" class="upload-form">
-                <h2>Upload New Document</h2>
-                <div v-if="uploadError" class="alert alert-danger">{{ uploadError }}</div>
-                <form @submit.prevent="uploadDocument" enctype="multipart/form-data">
-                    <div class="form-group">
-                        <label for="docName">Document Name</label>
-                        <input type="text" class="form-control" id="docName" v-model="uploadForm.name" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="docType">Document Type</label>
-                        <select class="form-control" id="docType" v-model="uploadForm.type" required>
-                            <option value="" disabled>Select a type</option>
-                            <option value="passport">Passport</option>
-                            <option value="visa">Visa</option>
-                            <option value="id">ID Card</option>
-                            <option value="insurance">Insurance</option>
-                            <option value="certificate">Certificate</option>
-                            <option value="other">Other</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="docExpiration">Expiration Date</label>
-                        <input type="date" class="form-control" id="docExpiration" v-model="uploadForm.expirationDate">
-                    </div>
-                    <div class="form-group">
-                        <label for="docIssuer">Issuing Authority</label>
-                        <input type="text" class="form-control" id="docIssuer" v-model="uploadForm.issuingAuthority">
-                    </div>
-                    <div class="form-group">
-                        <label for="docFile">Document File</label>
-                        <div class="file-input-container">
-                            <input type="file" class="file-input" id="docFile" @change="handleFileSelect" required>
-                            <label class="file-input-label" for="docFile">{{ uploadForm.file ? uploadForm.file.name :
-                                'Choose file' }}</label>
-                        </div>
-                        <small class="form-text text-muted">Supported formats: PDF, JPG, PNG (Max 5MB)</small>
-                    </div>
-                    <div v-if="uploadForm.file && !isValidFileType(uploadForm.file)" class="alert alert-danger">
-                        Invalid file type. Please upload a PDF, JPG, or PNG file.
-                    </div>
-                    <div v-if="uploadForm.file && !isValidFileSize(uploadForm.file)" class="alert alert-danger">
-                        File size exceeds 5MB limit.
-                    </div>
-                    <button type="submit" class="btn btn-primary" :disabled="uploadLoading || !isValidFile()">
-                        {{ uploadLoading ? 'Uploading...' : 'Upload Document' }}
-                    </button>
-                </form>
-            </div>
-
-            <div v-if="currentView === 'documentDetail' && isAuthenticated" class="document-detail">
-                <div v-if="loadingDocumentDetail" class="spinner-container">
-                    <div class="spinner"></div>
-                </div>
-                <div v-else-if="documentError" class="alert alert-danger">
-                    {{ documentError }}
-                </div>
-                <div v-else>
-                    <div class="document-header">
-                        <h2>{{ currentDocument.name }}</h2>
-                        <div>
-                            <button class="btn btn-secondary" @click="editDocument(currentDocument._id)">Edit</button>
-                            <button class="btn btn-danger" @click="confirmDelete(currentDocument)">Delete</button>
-                        </div>
-                    </div>
-
-                    <div class="status-badge" :class="getStatusClass(currentDocument)">
-                        {{ getStatusText(currentDocument) }}
-                    </div>
-
-                    <div class="document-content">
-                        <div class="document-info">
-                            <h4>Document Details</h4>
-                            <table class="detail-table">
-                                <tbody>
-                                    <tr>
-                                        <th>Type</th>
-                                        <td><span class="doc-type-pill">{{ currentDocument.type }}</span></td>
-                                    </tr>
-                                    <tr>
-                                        <th>Issuing Authority</th>
-                                        <td>{{ currentDocument.issuingAuthority || 'Not specified' }}</td>
-                                    </tr>
-                                    <tr>
-                                        <th>Expiration Date</th>
-                                        <td>{{ formatDate(currentDocument.expirationDate) || 'No expiration date' }}
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <th>Upload Date</th>
-                                        <td>{{ formatDate(currentDocument.createdAt) }}</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-
-                        <div class="document-actions">
-                            <button class="btn btn-info" @click="showDocuments">Back to Documents</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- edit form -->
-            <div v-if="currentView === 'editDocument' && isAuthenticated" class="edit-form">
-                <h2>Edit Document</h2>
-                <div v-if="editError" class="alert alert-danger">{{ editError }}</div>
-                <div v-if="loadingDocumentDetail" class="spinner-container">
-                    <div class="spinner"></div>
-                </div>
-                <form v-else @submit.prevent="updateDocument">
-                    <div class="form-group">
-                        <label for="editName">Document Name</label>
-                        <input type="text" class="form-control" id="editName" v-model="editForm.name" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="editType">Document Type</label>
-                        <select class="form-control" id="editType" v-model="editForm.type" required>
-                            <option value="" disabled>Select a type</option>
-                            <option value="passport">Passport</option>
-                            <option value="visa">Visa</option>
-                            <option value="id">ID Card</option>
-                            <option value="insurance">Insurance</option>
-                            <option value="certificate">Certificate</option>
-                            <option value="other">Other</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="editExpiration">Expiration Date</label>
-                        <input type="date" class="form-control" id="editExpiration" v-model="editForm.expirationDate">
-                    </div>
-                    <div class="form-group">
-                        <label for="editIssuer">Issuing Authority</label>
-                        <input type="text" class="form-control" id="editIssuer" v-model="editForm.issuingAuthority">
-                    </div>
-                    <div class="form-group">
-                        <label>Current File</label>
-                        <p class="form-control-static">{{ currentDocument.fileName || 'No file name available' }}
-                        </p>
-                    </div>
-                    <div class="form-group">
-                        <label for="editFile">Replace File (Optional)</label>
-                        <div class="file-input-container">
-                            <input type="file" class="file-input" id="editFile" @change="handleFileSelect">
-                            <label class="file-input-label" for="editFile">{{ editForm.file ? editForm.file.name :
-                                'Choose file' }}</label>
-                        </div>
-                        <small class="form-text text-muted">Supported formats: PDF, JPG, PNG (Max 5MB)</small>
-                    </div>
-                    <button type="submit" class="btn btn-primary" :disabled="editLoading">
-                        {{ editLoading ? 'Saving Changes...' : 'Save Changes' }}
-                    </button>
-                    <button type="button" class="btn btn-secondary" @click="viewDocument(currentDocument._id)">
-                        Cancel
-                    </button>
-                </form>
-            </div>
-
-            <div v-if="isAuthenticated && (currentView === 'dashboard' || currentView === 'documents')"
-                class="upload-btn" @click="showUpload" title="Upload Document">+</div>
         </div>
     </div>
 
+    <!-- ══ APP ════════════════════════════════════════════════ -->
+    <div v-if="isAuthenticated" class="app-shell">
 
-    <script src="app.js"></script>
+        <aside class="sidebar" :class="{'sidebar-open': navActive}">
+            <div class="sidebar-logo">
+                <div class="sidebar-logo-mark">
+                    <span class="material-symbols-rounded">shield</span>
+                </div>
+                <span class="sidebar-wordmark">DocVault</span>
+            </div>
+
+            <div class="sidebar-section-label">Main</div>
+            <nav class="sidebar-nav">
+                <a href="#" class="sidebar-link" :class="{active: currentView === 'dashboard'}" @click.prevent="showDashboard">
+                    <span class="material-symbols-rounded">grid_view</span>
+                    <span>Dashboard</span>
+                </a>
+                <a href="#" class="sidebar-link" :class="{active: ['documents','documentDetail','editDocument'].includes(currentView)}" @click.prevent="showDocuments">
+                    <span class="material-symbols-rounded">folder</span>
+                    <span>Documents</span>
+                </a>
+                <a href="#" class="sidebar-link" :class="{active: currentView === 'upload'}" @click.prevent="showUpload">
+                    <span class="material-symbols-rounded">cloud_upload</span>
+                    <span>Upload</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <a href="#" class="sidebar-link sidebar-logout" @click.prevent="logout">
+                    <span class="material-symbols-rounded">logout</span>
+                    <span>Sign out</span>
+                </a>
+            </div>
+        </aside>
+
+        <div class="sidebar-overlay" v-show="navActive" @click="toggleNavigation(false)"></div>
+
+        <div class="app-main">
+            <header class="topbar">
+                <button class="topbar-menu" @click="toggleNavigation()">
+                    <span class="material-symbols-rounded">menu</span>
+                </button>
+                <div class="topbar-brand">
+                    <span class="material-symbols-rounded">shield</span>
+                    DocVault
+                </div>
+            </header>
+
+            <div v-if="notification" class="notif-wrap">
+                <div class="notif-inner" :class="notification.type">
+                    {{ notification.message }}
+                    <button class="close-btn" @click="clearNotification"><span class="material-symbols-rounded">close</span></button>
+                </div>
+            </div>
+
+            <main class="page-content">
+
+                <!-- Dashboard -->
+                <div v-if="currentView === 'dashboard'" class="page">
+                    <div class="page-header">
+                        <div>
+                            <h1>Dashboard</h1>
+                            <p class="page-sub">Your document overview</p>
+                        </div>
+                        <button class="btn btn-primary" @click="showUpload">
+                            <span class="material-symbols-rounded">add</span> Upload
+                        </button>
+                    </div>
+
+                    <div class="stat-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon-wrap total"><span class="material-symbols-rounded">description</span></div>
+                            <div class="stat-val">{{ documentStats.total }}</div>
+                            <div class="stat-lbl">Total Documents</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon-wrap valid"><span class="material-symbols-rounded">verified</span></div>
+                            <div class="stat-val">{{ documentStats.valid }}</div>
+                            <div class="stat-lbl">Valid</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon-wrap expiring"><span class="material-symbols-rounded">schedule</span></div>
+                            <div class="stat-val">{{ documentStats.expiring }}</div>
+                            <div class="stat-lbl">Expiring Soon</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon-wrap expired"><span class="material-symbols-rounded">cancel</span></div>
+                            <div class="stat-val">{{ documentStats.expired }}</div>
+                            <div class="stat-lbl">Expired</div>
+                        </div>
+                    </div>
+
+                    <div class="section-header">
+                        <span class="section-title">Recent Documents</span>
+                        <button class="btn btn-ghost btn-sm" @click="showDocuments">View all</button>
+                    </div>
+
+                    <div v-if="loadingDocuments" class="spinner-wrap"><div class="spinner"></div></div>
+                    <div v-else-if="documents.length === 0" class="empty-state">
+                        <span class="material-symbols-rounded empty-icon">folder_open</span>
+                        <h3>No documents yet</h3>
+                        <p>Upload your first document to get started.</p>
+                        <button class="btn btn-primary" @click="showUpload">Upload Document</button>
+                    </div>
+                    <div v-else class="table-wrap">
+                        <table class="data-table">
+                            <thead>
+                                <tr><th>Name</th><th>Type</th><th>Expires</th><th>Status</th><th></th></tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="doc in recentDocuments" :key="doc._id">
+                                    <td class="td-name">{{ doc.name }}</td>
+                                    <td><span class="type-pill">{{ doc.type }}</span></td>
+                                    <td class="td-muted">{{ formatDate(doc.expirationDate) || '—' }}</td>
+                                    <td><span class="status-pill" :class="getStatusClass(doc)">{{ getStatusText(doc) }}</span></td>
+                                    <td><button class="btn btn-ghost btn-sm" @click="viewDocument(doc._id)">View</button></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Documents -->
+                <div v-if="currentView === 'documents'" class="page">
+                    <div class="page-header">
+                        <div>
+                            <h1>Documents</h1>
+                            <p class="page-sub">All your stored documents</p>
+                        </div>
+                        <button class="btn btn-primary" @click="showUpload">
+                            <span class="material-symbols-rounded">add</span> Upload
+                        </button>
+                    </div>
+
+                    <div class="filter-row">
+                        <div class="search-wrap">
+                            <span class="material-symbols-rounded search-icon">search</span>
+                            <input type="text" class="form-control search-input" placeholder="Search documents…" v-model="searchQuery">
+                        </div>
+                        <select class="form-control select-filter" v-model="typeFilter">
+                            <option value="">All types</option>
+                            <option value="passport">Passport</option>
+                            <option value="visa">Visa</option>
+                            <option value="id">ID Card</option>
+                            <option value="insurance">Insurance</option>
+                            <option value="certificate">Certificate</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+
+                    <div v-if="loadingDocuments" class="spinner-wrap"><div class="spinner"></div></div>
+                    <div v-else-if="filteredDocuments.length === 0" class="empty-state">
+                        <span class="material-symbols-rounded empty-icon">search</span>
+                        <h3 v-if="searchQuery || typeFilter">No results found</h3>
+                        <h3 v-else>No documents yet</h3>
+                        <p v-if="searchQuery || typeFilter">Try adjusting your search or filter.</p>
+                        <p v-else>Upload your first document to get started.</p>
+                        <button class="btn btn-primary" @click="showUpload">Upload Document</button>
+                    </div>
+                    <div v-else class="doc-grid">
+                        <div v-for="doc in filteredDocuments" :key="doc._id"
+                            class="doc-card" :class="'doc-' + getDocumentStatus(doc)">
+                            <div class="doc-card-top">
+                                <span class="type-pill">{{ doc.type }}</span>
+                                <span class="status-pill" :class="getStatusClass(doc)">{{ getStatusText(doc) }}</span>
+                            </div>
+                            <h4 class="doc-name">{{ doc.name }}</h4>
+                            <p class="doc-expires" v-if="doc.expirationDate">
+                                <span class="material-symbols-rounded">schedule</span>
+                                Expires {{ formatDate(doc.expirationDate) }}
+                            </p>
+                            <p class="doc-expires doc-no-exp" v-else>
+                                <span class="material-symbols-rounded">all_inclusive</span>
+                                No expiration
+                            </p>
+                            <div class="doc-actions">
+                                <button class="btn btn-ghost btn-sm" @click="viewDocument(doc._id)">
+                                    <span class="material-symbols-rounded">visibility</span> View
+                                </button>
+                                <button class="btn btn-ghost btn-sm" @click="editDocument(doc._id)">
+                                    <span class="material-symbols-rounded">edit</span> Edit
+                                </button>
+                                <button class="btn btn-ghost btn-sm btn-danger-ghost" @click="confirmDelete(doc)">
+                                    <span class="material-symbols-rounded">delete</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Upload -->
+                <div v-if="currentView === 'upload'" class="page">
+                    <div class="page-header">
+                        <div>
+                            <h1>Upload Document</h1>
+                            <p class="page-sub">Add a new document to your vault</p>
+                        </div>
+                    </div>
+                    <div class="form-card">
+                        <div v-if="uploadError" class="alert alert-danger">{{ uploadError }}</div>
+                        <form @submit.prevent="uploadDocument" enctype="multipart/form-data">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="docName">Document Name</label>
+                                    <input type="text" class="form-control" id="docName" v-model="uploadForm.name" placeholder="e.g. US Passport" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="docType">Document Type</label>
+                                    <select class="form-control" id="docType" v-model="uploadForm.type" required>
+                                        <option value="" disabled>Select a type</option>
+                                        <option value="passport">Passport</option>
+                                        <option value="visa">Visa</option>
+                                        <option value="id">ID Card</option>
+                                        <option value="insurance">Insurance</option>
+                                        <option value="certificate">Certificate</option>
+                                        <option value="other">Other</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="docExpiration">Expiration Date <span class="label-opt">(optional)</span></label>
+                                    <input type="date" class="form-control" id="docExpiration" v-model="uploadForm.expirationDate">
+                                </div>
+                                <div class="form-group">
+                                    <label for="docIssuer">Issuing Authority <span class="label-opt">(optional)</span></label>
+                                    <input type="text" class="form-control" id="docIssuer" v-model="uploadForm.issuingAuthority" placeholder="e.g. US Dept. of State">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Document File</label>
+                                <div class="upload-zone">
+                                    <input type="file" class="upload-input" id="docFile" @change="handleFileSelect" required>
+                                    <span class="material-symbols-rounded upload-zone-icon">cloud_upload</span>
+                                    <p v-if="!uploadForm.file" class="upload-zone-text"><strong>Click to choose</strong> or drag a file here</p>
+                                    <p v-else class="upload-zone-file">{{ uploadForm.file.name }}</p>
+                                    <span class="upload-zone-hint">PDF, JPG, PNG — max 5 MB</span>
+                                </div>
+                                <div v-if="uploadForm.file && !isValidFileType(uploadForm.file)" class="alert alert-danger" style="margin-top:8px">Only PDF, JPG, or PNG files are allowed.</div>
+                                <div v-if="uploadForm.file && !isValidFileSize(uploadForm.file)" class="alert alert-danger" style="margin-top:8px">File exceeds the 5 MB limit.</div>
+                            </div>
+                            <div class="form-actions">
+                                <button type="submit" class="btn btn-primary" :disabled="uploadLoading || !isValidFile()">
+                                    {{ uploadLoading ? 'Uploading…' : 'Upload Document' }}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Document Detail -->
+                <div v-if="currentView === 'documentDetail'" class="page">
+                    <div v-if="loadingDocumentDetail" class="spinner-wrap"><div class="spinner"></div></div>
+                    <div v-else-if="documentError" class="alert alert-danger">{{ documentError }}</div>
+                    <div v-else>
+                        <div class="page-header">
+                            <div>
+                                <button class="btn btn-ghost btn-sm" style="margin-bottom:10px" @click="showDocuments">
+                                    <span class="material-symbols-rounded">arrow_back</span> Documents
+                                </button>
+                                <h1>{{ currentDocument.name }}</h1>
+                                <span class="status-pill" :class="getStatusClass(currentDocument)" style="margin-top:8px;display:inline-flex">
+                                    {{ getStatusText(currentDocument) }}
+                                </span>
+                            </div>
+                            <div class="page-header-actions">
+                                <button class="btn btn-secondary" @click="editDocument(currentDocument._id)">
+                                    <span class="material-symbols-rounded">edit</span> Edit
+                                </button>
+                                <button class="btn btn-danger-outline" @click="confirmDelete(currentDocument)">
+                                    <span class="material-symbols-rounded">delete</span> Delete
+                                </button>
+                            </div>
+                        </div>
+                        <div class="detail-card">
+                            <p class="detail-section-title">Document Details</p>
+                            <div class="detail-grid">
+                                <div class="detail-item">
+                                    <span class="detail-label">Type</span>
+                                    <span class="type-pill">{{ currentDocument.type }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Issuing Authority</span>
+                                    <span class="detail-value">{{ currentDocument.issuingAuthority || 'Not specified' }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Expiration Date</span>
+                                    <span class="detail-value">{{ formatDate(currentDocument.expirationDate) || 'No expiration' }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Uploaded</span>
+                                    <span class="detail-value">{{ formatDate(currentDocument.createdAt) }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Edit -->
+                <div v-if="currentView === 'editDocument'" class="page">
+                    <div class="page-header">
+                        <div><h1>Edit Document</h1></div>
+                    </div>
+                    <div class="form-card">
+                        <div v-if="editError" class="alert alert-danger">{{ editError }}</div>
+                        <div v-if="loadingDocumentDetail" class="spinner-wrap"><div class="spinner"></div></div>
+                        <form v-else @submit.prevent="updateDocument">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="editName">Document Name</label>
+                                    <input type="text" class="form-control" id="editName" v-model="editForm.name" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="editType">Document Type</label>
+                                    <select class="form-control" id="editType" v-model="editForm.type" required>
+                                        <option value="" disabled>Select a type</option>
+                                        <option value="passport">Passport</option>
+                                        <option value="visa">Visa</option>
+                                        <option value="id">ID Card</option>
+                                        <option value="insurance">Insurance</option>
+                                        <option value="certificate">Certificate</option>
+                                        <option value="other">Other</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="editExpiration">Expiration Date <span class="label-opt">(optional)</span></label>
+                                    <input type="date" class="form-control" id="editExpiration" v-model="editForm.expirationDate">
+                                </div>
+                                <div class="form-group">
+                                    <label for="editIssuer">Issuing Authority <span class="label-opt">(optional)</span></label>
+                                    <input type="text" class="form-control" id="editIssuer" v-model="editForm.issuingAuthority">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Current File</label>
+                                <p class="current-file-name">{{ currentDocument.fileName || 'No file on record' }}</p>
+                            </div>
+                            <div class="form-group">
+                                <label>Replace File <span class="label-opt">(optional)</span></label>
+                                <div class="upload-zone">
+                                    <input type="file" class="upload-input" id="editFile" @change="handleFileSelect">
+                                    <span class="material-symbols-rounded upload-zone-icon">cloud_upload</span>
+                                    <p v-if="!editForm.file" class="upload-zone-text"><strong>Click to choose</strong> a replacement</p>
+                                    <p v-else class="upload-zone-file">{{ editForm.file.name }}</p>
+                                    <span class="upload-zone-hint">PDF, JPG, PNG — max 5 MB</span>
+                                </div>
+                            </div>
+                            <div class="form-actions">
+                                <button type="submit" class="btn btn-primary" :disabled="editLoading">{{ editLoading ? 'Saving…' : 'Save Changes' }}</button>
+                                <button type="button" class="btn btn-secondary" @click="viewDocument(currentDocument._id)">Cancel</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+            </main>
+        </div>
+
+        <button v-if="currentView === 'dashboard' || currentView === 'documents'"
+            class="fab" @click="showUpload" title="Upload Document">
+            <span class="material-symbols-rounded">add</span>
+        </button>
+    </div>
+
+</div>
+<script src="app.js"></script>
 </body>
-
 </html>
